@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Quarks</title>
+
+<style>
+html, body { position: absolute; width: 100%; padding: 0; margin: 0; }
+body { background-color: #444; color: #ddd; text-align: center; font-family: Verdana, sans-serif; }
+#board, #panel { display: inline-block; margin: 2em auto; padding: 0; border: 2px solid; width: 14.4em; vertical-align: top; }
+#board>div { margin: 0; padding: 0; text-align: center; font-size: 2em; font-weight: bold; }
+#board>div>div {
+  margin: 0; padding: 0; display: inline-block; width: 1.2em; height: 1.2em; text-align: center; vertical-align: middle;
+  cursor: pointer;
+}
+#score { font-weight: bold; text-align: right; padding: 0.5em 1em; }
+input[type=button] { height: 3em; cursor: pointer; }
+
+#help {
+  position: absolute; width: 30em; height: 30em; top: 2em; left: 50%; margin-left: -15em; padding: 0;
+  background: #444; border: 2px solid;
+}
+#help>div { padding: 0.5em 1em; height: 24em; text-align: left; overflow: auto; }
+p { margin: 1em 0 ; }
+code { font-family: monospace; white-space: nowrap; letter-spacing: 0.1em; font-size: 120%; }
+b { font-weight: bold; }
+.hidden { display: none; }
+
+.col0 { color: #e54; }
+.col1 { color: #3c3; }
+.col2 { color: #66f; }
+.col3 { color: #3de; }
+.col4 { color: #f3f; }
+.col5 { color: #ed3; }
+.selected { background: #ccc; }
+.scored { background: #eee; }
+</style>
+
+<script src="misc.js"></script>
+<script src="quarks.js"></script>
+<script src="board.js"></script>
+<script src="game.js"></script>
+</head>
+<body>
+
+<div id="board"></div>
+
+<div id="panel">
+<div id="score">0</div>
+<br>
+<input type="button" value="Заново" onclick="game.reset()"><br><br>
+<input type="button" value="Справка" onclick="document.getElementById('help').classList.remove('hidden')"><br><br>
+<input id="hint-btn" type="button" value="Подсказка (0)" onclick="game.showHint()" title="потратить одну подсказку"><br><br>
+</div>
+
+<div id="help" class="hidden">
+<div><!-- begin -->
+<p> Цель игры: меняя местами соседние клетки, создавать выигрышные комбинации из «кварков». Игра заканчивается, когда такую комбинацию составить невозможно.
+
+<p> У каждого кварка есть аромат (обозначается формой), заряд (кварк/антикварк) и цвет. Кварки бывают <b class="col0">красные</b>, <b class="col1">зеленые</b> и <b class="col2">синие</b>. Антикварки бывают <b class="col3">голубые</b>, <b class="col4">пурпурные</b> и <b class="col5">желтые</b>. Изначально на поле присутствуют кварки двух ароматов, но в процессе игры будут добавляться новые ароматы.
+
+<p> Есть два вида выигрышных комбинаций: пара кварк + антикварк одного аромата и противоположных цветов (<b class="col0">красный</b> + <b class="col3">голубой</b>, <b class="col1">зеленый</b> + <b class="col4">пурпурный</b>, <b class="col2">синий</b> + <b class="col5">желтый</b>); и линия из трех кварков либо трех антикварков трех разных цветов и двух разных ароматов.
+
+<p> Примеры выигрышных комбинаций: <code><b class="col0">1</b><b class="col3">1</b></code>, <code><b class="col1">1</b><b class="col4">1</b></code>, <code><b class="col2">1</b><b class="col5">1</b></code>, <code><b class="col0">1</b><b class="col2">1</b><b class="col1">2</b></code>, <code><b class="col4">1</b><b class="col5">2</b><b class="col3">1</b></code>.
+
+<p> Некорректные пары: <code><b class="col0">1</b><b class="col3">2</b></code> (разные ароматы), <code><b class="col4">1</b><b class="col3">1</b></code> (одинаковые заряды), <code><b class="col1">1</b><b class="col5">1</b></code> (недополняющие цвета).
+
+<p> Некорректные тройки: <code><b class="col0">1</b><b class="col1">1</b><b class="col3">2</b></code> (разные заряды), <code><b class="col1">1</b><b class="col0">1</b><b class="col2">1</b></code> (все ароматы совпадают), <code><b class="col5">1</b><b class="col4">2</b><b class="col3">3</b></code> (все ароматы различны).
+
+<p> Чтобы сделать ход, щелкните по любой клетке поля (она будет подсвечена), а затем по любой из четырех соседних клеток. Если ход не является корректным, то ничего не происходит. Если ход корректен, то выбранные кварки меняются местами, все комбинации, в которых они участвуют, удаляются с поля, а пустые клетки заполняются кварками из вышележащих клеток. Если при этом получились новые комбинации, то они тоже удаляются. Когда комбинаций больше нет, начисляются очки, и все пустые клетки заполняются (почти) случайными кварками. Если при этом получится, что возможных ходов нет, то игра завершается.
+
+<p> За каждую 1000 очков вы получаете возможность воспользоваться подсказкой. При использовании подсказки будет подсвечена случайная пара клеток, дающая корректный ход.
+<!-- end --></div>
+
+<br><input type="button" value="Все ясно!" onclick="document.getElementById('help').classList.add('hidden')">
+</div>
+
+<script>
+var game
+
+window.onload = function () {
+  game = new Game(6, 10)
+  game.run()
+}
+
+</script>
+</body>
+</html>
