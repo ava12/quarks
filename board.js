@@ -295,3 +295,26 @@ GameBoard.prototype.hasScoringMove = function () {
 
   return false
 }
+
+// @return string
+GameBoard.prototype.serialize = function () {
+  for (i = 0; i < this.width; i++) {
+    this.board[i] = this.board[i].slice(0, this.height)
+  }
+  return this.board.flat()
+}
+
+GameBoard.prototype.deserialize = function (data) {
+  if (!data instanceof Array) {
+    throw 'некорректный тип сериализованных данных'
+  }
+
+  if (data.length != this.width * this.height) {
+    throw 'некорректный размер сериализованных данных'
+  }
+
+  var pos = 0
+  for (var i = 0; i < this.width; i++, pos += this.height) {
+    this.board[i] = data.slice(pos, pos + this.height)
+  }
+}

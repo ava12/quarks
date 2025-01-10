@@ -2,6 +2,7 @@
 function Game (width, height) {
   this.state = this.states.initial
   this.level = 0
+  this.hiScore = 0
   this.totalScore = 0
   this.nextLevelScore = this.levelScores[0]
   this.hint = null // {x1, y1, x2, y2}
@@ -9,11 +10,23 @@ function Game (width, height) {
   this.nextHintScore = this.hintCost
   this.selected = null
   this.score = null
+  this.modals = 0
   this.model = new QuarkModel(this.level + 2)
   this.board = new GameBoard(this.model, width, height)
   this.cells = new Array(width)
+  this.hiScoreDisplay = document.getElementById('hiscore')
   this.scoreDisplay = document.getElementById('score')
   this.hintBtn = document.getElementById('hint-btn')
+  this.alertPopup = document.getElementById('alert')
+  this.alertMessage = document.getElementById('message')
+  this.confirmPopup = document.getElementById('confirm')
+
+  this.panels = {
+    menu: document.getElementById('menu'),
+    board: document.getElementById('board'),
+    help: document.getElementById('help')
+  }
+  this.currentPanel = 'menu'
 
   var rows = new Array(height)
   for (var y = 0; y < height; y++) {
@@ -36,7 +49,7 @@ function Game (width, height) {
     }
   }
 
-  var dom = document.getElementById('board')
+  var dom = this.panels.board
   for (y = height - 1; y >= 0; y--) {
     dom.appendChild(rows[y])
   }
@@ -61,6 +74,10 @@ Game.prototype.timeouts = {
 }
 
 Game.prototype.onClick = function (cell) {
+  if (this.modals) {
+    return
+  }
+
   var cx = Number(cell.dataset.x)
   var cy = Number(cell.dataset.y)
 
@@ -70,7 +87,7 @@ Game.prototype.onClick = function (cell) {
       this.state = this.states.selected
       this.selected = {x: cx, y: cy}
       this.selectCell(cx, cy)
-    break
+      break
 
     case this.states.selected:
       var sx = this.selected.x
@@ -85,7 +102,7 @@ Game.prototype.onClick = function (cell) {
         this.makeMove(sx, sy, cx, cy)
       }
 
-    break
+      break
   }
 }
 
@@ -161,13 +178,13 @@ Game.prototype.showHint = function () {
 
   this.hideHint()
   if (!this.hintsLeft) {
-    alert('У вас нет подсказок!')
+    this.alert('У вас нет подсказок!')
     return
   }
 
   this.hint = this.makeHint()
   if (!this.hint) {
-    alert('Нет ходов!')
+    this.alert('Нет ходов!')
     return
   }
 
@@ -293,9 +310,17 @@ Game.prototype.fillBoard = function () {
 
   if (this.board.hasScoringMove()) {
     this.state = this.states.initial
+    this.save()
   } else {
     this.state = this.states.final
-    alert('Нет возможных ходов!')
+    this.hintsLeft = 0
+    this.hintBtn.value = '---'
+    if (this.totalScore > this.hiScore) {
+      this.hiScore = this.totalScore
+      this.hiScoreDisplay.innerText = this.hiScore
+    }
+    this.save()
+    this.alert('Нет возможных ходов!')
   }
 }
 
@@ -329,14 +354,41 @@ Game.prototype.drawBoard = function () {
   }
 }
 
-Game.prototype.reset = function () {
+Game.prototype.show = function (dom, modalType) {
+  dom.classList.remove('hidden')
+  if (modalType) {
+    this.modals |= modalType
+  }
+}
+
+Game.prototype.hide = function (dom, modalType) {
+  dom.classList.add('hidden')
+  if (modalType) {
+    this.modals &= (~modalType)
+  }
+}
+
+Game.prototype.showPanel = function (id) {
+  var nextPanel = this.panels[id]
+  this.hide(this.panels[this.currentPanel])
+  this.show(nextPanel)
+  this.currentPanel = id
+}
+
+Game.prototype.alert = function (msg) {
+  this.alertMessage.innerText = msg
+  this.show(this.alertPopup, 1)
+}
+
+Game.prototype.reset = function (confirmed) {
   var s = this.state
   var ss = this.states
   if (s != ss.initial && s != ss.selected && s != ss.final) {
     return
   }
 
-  if (!confirm('Завершить игру?')) {
+  if (!confirmed) {
+    this.show(this.confirmPopup, 2)
     return
   }
 
@@ -352,10 +404,62 @@ Game.prototype.reset = function () {
   this.hideHint()
   this.score = null
   this.state = ss.initial
-  this.run()
+  this.start()
+  this.save()
+  this.showPanel('board')
 }
 
-Game.prototype.run = function () {
+Game.prototype.confirmReset = function (confirmed) {
+  this.hide(this.confirmPopup, 2)
+  if (confirmed) {
+    this.reset(true)
+  }
+}
+
+Game.prototype.save = function () {
+  var data = {
+    hiScore: this.hiScore,
+    score: this.totalScore,
+    hints: this.hintsLeft,
+    final: this.state == this.states.final,
+    board: this.board.serialize()
+  }
+
+  localStorage.setItem('quarks', JSON.stringify(data))
+}
+
+Game.prototype.load = function () {
+  var data = localStorage.getItem('quarks')
+  if (data == undefined) {
+    return
+  }
+
+  try {
+    data = JSON.parse(data)
+    this.board.deserialize(data.board)
+    this.hiScore = data.hiScore
+    this.totalScore = data.score
+    this.addScore(0)
+    this.hintsLeft = data.hints
+
+    this.hiScoreDisplay.innerText = this.hiScore
+    if (data.final) {
+      this.state = this.states.final
+      this.hintBtn.value = '---'
+    } else {
+      this.state = this.states.initial
+      this.updateHints(0)
+    }
+
+  } catch (e) {
+    if (e instanceof Error) {
+      e = e.message
+    }
+    this.alert('Ошибка: ' + e)
+  }
+}
+
+Game.prototype.start = function () {
   this.board.fill()
   while (!this.board.hasScoringMove()) {
     this.board.reset()
@@ -363,4 +467,5 @@ Game.prototype.run = function () {
   }
 
   this.drawBoard()
+  this.save()
 }
