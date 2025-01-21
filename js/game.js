@@ -11,8 +11,8 @@ function Game (width, height) {
   this.selected = null
   this.score = null
   this.modals = 0
-  this.model = new QuarkModel(this.level + 2)
-  this.board = new GameBoard(this.model, width, height)
+  this.flavors = 2
+  this.board = new GameBoard(width, height)
   this.cells = new Array(width)
   this.hiScoreDisplay = document.getElementById('hiscore')
   this.scoreDisplay = document.getElementById('score')
@@ -237,9 +237,9 @@ Game.prototype.addScore = function (points) {
 
   while (this.totalScore >= this.nextLevelScore) {
     this.level++
-    this.model.setFlavours(this.level + 2)
     this.nextLevelScore = this.levelScores[this.level] * 1 // undefined -> NaN
   }
+  this.flavors = this.level + 2
 
   while (this.totalScore >= this.nextHintScore) {
     this.addHint()
@@ -283,8 +283,8 @@ Game.prototype.compactBoard = function () {
 }
 
 Game.prototype.getBaseConstraint = function () {
-  var flavours = zeroArray(this.model.flavours)
-  var colors = zeroArray(7)
+  var flavors = zeroArray(this.flavors)
+  var colors = zeroArray(6)
   for (var x = 0; x < this.board.width; x++) {
     for (var y = 0; y < this.board.height; y++) {
       var q = this.board.getCell(x, y)
@@ -292,14 +292,13 @@ Game.prototype.getBaseConstraint = function () {
         break
       }
 
-      q = this.model.getQuark(q)
-      flavours[q.flavour]++
-      colors[q.color + 3]++
+      flavors[Quark.flavor(q)]++
+      colors[Quark.color(q)]++
     }
   }
 
-  var result = this.model.getConstraint()
-  var dominant = this.model.getIndex(maxIndex(flavours), maxIndex(colors) - 3)
+  var result = new QuarkSet(this.flavors)
+  var dominant = Quark.make(maxIndex(flavors), maxIndex(colors))
   result.exclude(dominant)
   return result
 }
@@ -396,7 +395,7 @@ Game.prototype.reset = function (confirmed) {
   this.totalScore = 0
   this.scoreDisplay.innerText = '0'
   this.level = 0
-  this.model.setFlavours(2)
+  this.flavors = 2
   this.nextLevelScore = this.levelScores[0]
   this.hintsLeft = 0
   this.updateHints(0)
@@ -460,10 +459,11 @@ Game.prototype.load = function () {
 }
 
 Game.prototype.start = function () {
-  this.board.fill()
+  var qs = new QuarkSet(this.flavors)
+  this.board.fill(qs)
   while (!this.board.hasScoringMove()) {
     this.board.reset()
-    this.board.fill()
+    this.board.fill(qs)
   }
 
   this.drawBoard()

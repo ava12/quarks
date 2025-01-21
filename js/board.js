@@ -80,8 +80,7 @@ GameScore.prototype.total = function () {
 }
 
 
-function GameBoard (model, width, height) {
-  this.model = model
+function GameBoard (width, height) {
   this.width = width
   this.height = height
   this.board = new Array(width)
@@ -107,8 +106,8 @@ GameBoard.prototype.line = function (x0, y0, x1, y1) {
   return {x0: x0, y0: y0, x1: x1, y1: y1}
 }
 
-GameBoard.prototype.setCell = function (x, y, v) {
-  this.board[x][y] = v
+GameBoard.prototype.setCell = function (x, y, q) {
+  this.board[x][y] = q
 }
 
 GameBoard.prototype.clearCell = function (x, y) {
@@ -124,29 +123,24 @@ GameBoard.prototype.getCell = function (x, y) {
   return this.board[x][y]
 }
 
-// @return QuarkConstraint
-GameBoard.prototype.getConstraint = function (base, x, y) {
-  var cons = (base ? base.copy() : this.model.getConstraint())
+// @return QuarkSet
+GameBoard.prototype.getConstraint = function (qs, x, y) {
+  var cons = qs.copy()
   var cd = [[-1, 0], [1, 0], [0, -1]]
   var td = [[-2, 0, -1, 0], [-1, 0, 1, 0], [1, 0, 2, 0], [0, -1, 0, -2]]
 
   for (var i = 0; i < cd.length; i++) {
-    var v = this.getCell(x + cd[i][0], y + cd[i][1])
-    if (v != undefined) {
-      cons.exclude(this.model.getPairQuark(v).index)
+    var q = this.getCell(x + cd[i][0], y + cd[i][1])
+    if (q != undefined) {
+      cons.excludePair(q)
     }
   }
 
   for (i = 0; i < td.length; i++) {
-    v = this.getCell(x + td[i][0], y + td[i][1])
-    var w = this.getCell(x + td[i][2], y + td[i][3])
-    if (v == undefined || w == undefined) {
-      continue
-    }
-
-    var qs = this.model.getTripletQuarks(v, w)
-    for (var j = 0; j < qs.length; j++) {
-      cons.exclude(qs[j].index)
+    q = this.getCell(x + td[i][0], y + td[i][1])
+    var r = this.getCell(x + td[i][2], y + td[i][3])
+    if (q != undefined && r != undefined) {
+      cons.excludeTriplets(q, r)
     }
   }
 
@@ -154,13 +148,13 @@ GameBoard.prototype.getConstraint = function (base, x, y) {
 }
 
 // @return array int (y-координата нижней заполненной клетки в колонке), null (колонка не изменилась)
-GameBoard.prototype.fill = function (baseConstraint) {
+GameBoard.prototype.fill = function (qs) {
   var lowestFill = new Array(this.width)
 
   for (var x = 0; x < this.width; x++) {
     for (var y = 0; y < this.height; y++) {
       if (this.getCell(x, y) == undefined) {
-        this.board[x][y] = this.getConstraint(baseConstraint, x, y).pickRandom()
+        this.board[x][y] = this.getConstraint(qs, x, y).pickRandom()
         if (lowestFill[x] == undefined) {
           lowestFill[x] = y
         }
@@ -196,21 +190,21 @@ GameBoard.prototype.compact = function () {
 }
 
 GameBoard.prototype.swap = function (x1, y1, x2, y2) {
-  var v = this.getCell(x1, y1)
-  var w = this.getCell(x2, y2)
-  this.board[x1][y1] = w
-  this.board[x2][y2] = v
+  var q = this.getCell(x1, y1)
+  var r = this.getCell(x2, y2)
+  this.board[x1][y1] = r
+  this.board[x2][y2] = q
 }
 
 // @return int[][4] [{x0, y0, x1, y1}*]
 GameBoard.prototype.getPairs = function (x, y) {
   var result = []
   var d = [[0, 1], [-1, 0], [1, 0], [0, -1]]
-  var u = this.board[x][y]
+  var p = this.board[x][y]
 
   for (var i = 0; i < d.length; i++) {
-    var v = this.getCell(x + d[i][0], y + d[i][1])
-    if (v != undefined && this.model.isPair(u, v)) {
+    var q = this.getCell(x + d[i][0], y + d[i][1])
+    if (q != undefined && Quark.isPair(p, q)) {
       result.push(this.line(x, y, x + d[i][0], y + d[i][1]))
     }
   }
@@ -222,17 +216,17 @@ GameBoard.prototype.getPairs = function (x, y) {
 GameBoard.prototype.getTriplets = function (x, y) {
   var result = []
   var d = [[-2, 0, -1, 0], [-1, 0, 1, 0], [1, 0, 2, 0], [0, -2, 0, -1], [0, -1, 0, 1], [0, 1, 0, 2]]
-  var u = this.board[x][y]
+  var p = this.board[x][y]
 
   for (var i = 0; i < d.length; i++) {
     var x1 = x + d[i][0]
     var y1 = y + d[i][1]
     var x2 = x + d[i][2]
     var y2 = y + d[i][3]
-    var v = this.getCell(x1, y1)
-    var w = this.getCell(x2, y2)
+    var q = this.getCell(x1, y1)
+    var r = this.getCell(x2, y2)
 
-    if (v != undefined && w != undefined && this.model.isTriplet(u, v, w)) {
+    if (q != undefined && r != undefined && Quark.isTriplet(p, q, r)) {
       result.push(this.line(Math.min(x, x1, x2), Math.min(y, y1, y2), Math.max(x, x1, x2), Math.max(y, y1, y2)))
     }
   }
@@ -296,7 +290,7 @@ GameBoard.prototype.hasScoringMove = function () {
   return false
 }
 
-// @return string
+// @return Array
 GameBoard.prototype.serialize = function () {
   for (i = 0; i < this.width; i++) {
     this.board[i] = this.board[i].slice(0, this.height)

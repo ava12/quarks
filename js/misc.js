@@ -14,15 +14,15 @@ function zeroArray (len) {
 function maxIndex (a) {
   var result = 0
   var maxValue = a[0]
-  var maxCopys = 1
+  var maxCopies = 1
   for (var i = 1; i < a.length; i++) {
     if (a[i] > maxValue) {
       result = i
       maxValue = a[i]
-      maxCopys = 1
+      maxCopies = 1
     } else if (a[i] == maxValue) {
-      maxCopys++
-      if (Math.random() < 1 / maxCopys) {
+      maxCopies++
+      if (Math.random() < 1 / maxCopies) {
         result = i
       }
     }
