@@ -87,6 +87,14 @@ function GameBoard (width, height) {
   this.reset()
 }
 
+GameBoard.prototype.copy = function () {
+  var result = new GameBoard(this.width, this.height)
+  for (var i = 0; i < this.width; i++) {
+    result.board[i] = this.board[i].slice()
+  }
+  return result
+}
+
 GameBoard.prototype.reset = function () {
   for (var x = 0; x < this.width; x++) {
     this.board[x] = new Array(this.height)
@@ -243,6 +251,12 @@ GameBoard.prototype.clearLine = function (l) {
   this.clearCell(l.x0, l.y0)
   this.clearCell(l.x1, l.y1)
   this.clearCell((l.x0 + l.x1) >> 1, (l.y0 + l.y1) >> 1)
+}
+
+GameBoard.prototype.clearLines = function (ls) {
+  for (var i in ls) {
+    this.clearLine(ls[i])
+  }
 }
 
 GameBoard.prototype.updateScoreSet = function (score, x, y) {

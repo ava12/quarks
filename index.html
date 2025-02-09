@@ -49,6 +49,7 @@ a, a:hover, a:visited { font-weight: bold; color: #99f; }
 <script src="js/quarks.js"></script>
 <script src="js/board.js"></script>
 <script src="js/game.js"></script>
+<script src="js/ui.js"></script>
 </head>
 <body>
 
@@ -59,16 +60,16 @@ a, a:hover, a:visited { font-weight: bold; color: #99f; }
 <br><br>
 
 <div id="menu">
-<input type="button" value="Продолжить" onclick="game.showPanel('board')"><br><br>
-<input type="button" value="Заново" onclick="game.reset()"><br><br>
-<input type="button" value="Справка" onclick="game.showPanel('help')"><br><br>
+<input type="button" value="Продолжить" onclick="ui.showPanel('board')"><br><br>
+<input type="button" value="Заново" onclick="ui.reset()"><br><br>
+<input type="button" value="Справка" onclick="ui.showPanel('help')"><br><br>
 <a href="https://github.com/ava12/quarks/archive/refs/heads/gh-pages.zip">Скачать</a><br><br>
 </div>
 
 <div id="board" class="hidden">
 <div>
-<input id="menu-btn" type="button" value="Меню" onclick="game.showPanel('menu')">
-<input id="hint-btn" type="button" value="Подсказка (0)" onclick="game.showHint()" title="потратить одну подсказку">
+<input id="menu-btn" type="button" value="Меню" onclick="ui.showPanel('menu')">
+<input id="hint-btn" type="button" value="Подсказка (0)" onclick="ui.showHint()" title="потратить одну подсказку">
 <br>
 </div>
 </div>
@@ -92,29 +93,28 @@ a, a:hover, a:visited { font-weight: bold; color: #99f; }
 <p> За каждую 1000 очков вы получаете возможность воспользоваться подсказкой. При использовании подсказки будет подсвечена случайная пара клеток, дающая корректный ход.
 <!-- end --></div>
 
-<br><input type="button" value="Все ясно!" onclick="game.showPanel('menu')">
+<br><input type="button" value="Все ясно!" onclick="ui.showPanel('menu')">
 </div>
 
 <div id="alert" class="popup hidden">
 <span id="message"></span><br><br>
-<input type="button" value="Закрыть" onclick="game.hide(game.alertPopup, 1)">
+<input type="button" value="Закрыть" onclick="ui.hide(ui.alertPopup, 1)">
 </div>
 
 <div id="confirm" class="popup hidden">
 Завершить игру?<br><br>
-<input type="button" value="Да" onclick="game.confirmReset(true)">
-<input type="button" value="Нет" onclick="game.confirmReset(false)">
+<input type="button" value="Да" onclick="ui.confirmReset(true)">
+<input type="button" value="Нет" onclick="ui.confirmReset(false)">
 </div>
 
 </div>
 
 <script>
-var game
+var ui
 
 window.onload = function () {
-  game = new Game(6, 10)
-  game.load()
-  game.start()
+  ui = new Ui(6, 10)
+  ui.start()
 }
 
 </script>
