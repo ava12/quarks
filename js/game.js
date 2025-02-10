@@ -49,10 +49,12 @@ Game.prototype.updateHints = function (diff) {
 
 Game.prototype.addHint = function () {
   this.updateHints(1)
+  this.save()
 }
 
 Game.prototype.takeHint = function () {
   this.updateHints(-1)
+  this.save()
 }
 
 Game.prototype.addScore = function (points) {

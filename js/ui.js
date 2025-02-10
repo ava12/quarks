@@ -52,9 +52,7 @@ Ui.prototype.symbols = ['A', 'V', 'X', '@', '8', '0', '%', '$']
 Ui.prototype.states = {
   initial: 'initial',
   selected: 'selected',
-  moved: 'moved',
-  cleared: 'cleared',
-  compacted: 'compacted'
+  moving: 'moving'
 }
 Ui.prototype.timeouts = {
   moved: 500,
@@ -116,6 +114,7 @@ Ui.prototype.onClick = function (cell) {
       this.state = this.states.initial
 
       if (dx + dy == 1 && this.board.isScoringMove(sx, sy, cx, cy)) {
+        this.state = this.states.moving
         this.makeMove(sx, sy, cx, cy)
       }
 
@@ -265,7 +264,6 @@ Ui.prototype.highlight = function () {
     this.highlightCell(l.x1, l.y1)
     this.highlightCell((l.x0 + l.x1) >> 1, (l.y0 + l.y1) >> 1)
   }
-  this.state = this.states.selected
   this.delay(this.timeouts.cleared, this.clearLines)
 }
 
@@ -282,7 +280,6 @@ Ui.prototype.clearLines = function (lines) {
     this.drawCell((l.x0 + l.x1) >> 1, (l.y0 + l.y1) >> 1)
   }
 
-  this.state = this.states.cleared
   this.delay(this.timeouts.cleared, this.compactBoard)
 }
 
@@ -291,10 +288,8 @@ Ui.prototype.compactBoard = function () {
   this.drawBoard()
   this.moveResult.shift()
   if (this.moveResult.length) {
-    this.state = this.states.moved
     this.delay(this.timeouts.moved, this.highlight)
   } else {
-    this.state = this.states.initial
     this.delay(this.timeouts.compacted, this.fillBoard)
   }
 }
@@ -302,4 +297,5 @@ Ui.prototype.compactBoard = function () {
 Ui.prototype.fillBoard = function () {
   this.board = this.game.board.copy()
   this.drawBoard()
+  this.state = this.states.initial
 }
